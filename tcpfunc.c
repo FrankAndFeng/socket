@@ -252,14 +252,17 @@ int broadcastFunc(client_list *head)
     int len;
 
     setbuf(stdin, NULL);
+    /* 加载头部信息 */
+    memcpy(strin, SENDTO_SERVER_SEND, HEAD_BUF_SIZE - 1);
     printf("请输入要广播的消息，或输入 --exit,退出，返回主页\n");
     while (1)
     {
         /* 每次操作完清空终端输入缓存区 */
         setbuf(stdin, NULL);
-        if (fgets(strin, MAX_BUF_SIZE, stdin))
+        if (fgets(strin + HEAD_BUF_SIZE - 1, MAX_BUF_SIZE - HEAD_BUF_SIZE + 1, stdin))
         {
-            sscanf(strin, "%s", exitorder);
+            /* 捕捉退出动作 */
+            memcpy(exitorder, strin + HEAD_BUF_SIZE - 1, 6);
             if (!(strcmp(exitorder, EXIT)))
             {
                 memset(strin, 0, strlen(strin));
@@ -360,15 +363,17 @@ int sendToClientFunc(client_list *head)
             }
 
             memset(str, 0, strlen(str));
+            /* 加入头信息 */
+            memcpy(str, SENDTO_SERVER_SEND, HEAD_BUF_SIZE - 1);
 
             /* 循环发送 */
             printf("输入待发送的字符串，或--exit返回上级选项\n");
             printf("发送到客户端 %d: ", sockfd);
             while (1)
             {
-                if ((fgets(str, MAX_BUF_SIZE, stdin)))
+                if ((fgets(str + HEAD_BUF_SIZE - 1, MAX_BUF_SIZE - HEAD_BUF_SIZE + 1, stdin)))
                 {
-                    sscanf(str, "%s", exit_order);
+                    memcpy(exit_order, str + HEAD_BUF_SIZE - 1, 6);
                     /* 输入--exit，退出当前功能，返回主页 */
                     if (!(strcmp(exit_order, EXIT)))
                     {
@@ -522,7 +527,7 @@ int sendClist(client_list *head, int sockfd)
 {
     int ret = 0;
     if ((NULL == head) || (NULL == (((node *)head)->next)))
-        return --ret;
+        return -1;
 
     int clist[20];
     int len = 0;
@@ -530,7 +535,7 @@ int sendClist(client_list *head, int sockfd)
 
     /* 如果无在线客户端，发送空，返回-1 */
     if (NULL == cpt)
-        ret--;
+        return -2;
 
     while (cpt)
     {
@@ -544,14 +549,16 @@ int sendClist(client_list *head, int sockfd)
 
     /* 拼接字符串 */
     int i = 0;
+    char str_tmp[4];
     for (i = 0;i < len; i++)
     {
-        sprintf(str_send + HEAD_BUF_SIZE + 3*i, "%02d:", clist[i]);
+        sprintf(str_tmp, "%02d:", clist[i]);
+        memcpy(str_send + HEAD_BUF_SIZE - 1 + 3*i, str_tmp, 3);
     }
 
     /* 发送字符串 */
     if (!(send(sockfd, str_send, strlen(str_send), 0)))
-        ret--;
+        return -3;
 
     return ret;
 }

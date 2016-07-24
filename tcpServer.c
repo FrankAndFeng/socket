@@ -221,48 +221,67 @@ void *ioHandler(void *argc)
 void *clientHandler(void *argc)
 {
 	char strRecv[MAX_BUF_SIZE];
+    char str_head[4];
 	int numbytes = 0;
     int head = 0;
     int sockfd =((client_inpara *)argc)->sock_fd;
-    client_list *head = ((client_inpara *)argc)->head;
+    client_list *clist_head =(client_list *)((client_inpara *)argc)->head;
 	while(1)
 	{
         numbytes = recv(sockfd, strRecv, MAX_BUF_SIZE, 0);
 		if (numbytes > 0)
 		{
 			strRecv[numbytes] = '\0';
+            printf("Received from client %d: %s\n", sockfd, strRecv);
             /* 在此处判断接受的是数据还是命令 */
-            sscanf(strRecv, "%d:%s", &head, strRecv);
+            //sscanf(strRecv, "%d:%s", &head, strRecv);
+            memcpy(str_head, strRecv, 3);
+            sscanf(str_head, "%d:", &head);
 
             /* 请求客户端sockfd列表 */
             if (head == CLIST_REQUEST)
             {
+                int erro = 0;
                 //格式化发送客户端sockfd列表
-                if (sendClist(head, sockfd))
+                if (sendClist(clist_head, sockfd))
+                {
                     printf("发送客户端sockfd列表失败\n");
+                }
             }
             /* 请求客户端在服务器中的sockfd */
             else if (head == GET_SOCKFD_IN_SERVER)
             {
-                //发送本线程中的sockfd，携带头信息
-
+                sprintf(strRecv + 3, "%02d:", sockfd);
+                printf("GET_SOCKFD_IN_SERVER: %s\n", strRecv);
+                if (!(send(sockfd, strRecv, strlen(strRecv), 0)))
+                {
+                    printf("client %d GET_SOCKFD_IN_SERVER failed\n", sockfd);
+                }
             }
             /* 直接发送到服务器的数据 */
             else if (head == SENDTO_SERVER)
             {
-
+                printf("Received from client %d: %s\n", sockfd, strRecv + 3);
             }
             /* 转发数据到对应客户端，head即为客户端在服务器的sockfd,
              * 头部填充源头客户端的sockfd*/
             else if (head > SENDTO_SERVER)
             {
-                //发送数据到对应客户端
+                sprintf(str_head, "%02d:", sockfd);
+                memcpy(strRecv, str_head, 3);
+                printf("转发到客户端 %d\n", head);
+                /* 解析头部信息 */
+                if (!(send(head, strRecv, strlen(strRecv), 0)))
+                    printf("转发到客户端 %d 失败\n", head);
+                else
+                    printf("发送到客户端 %d：%s", head, strRecv + 3);
             }
-			printf("Received from client %d: %s\n", sockfd, strRecv);
+            head = 0;
+            memset(strRecv, 0, strlen(strRecv));
 		}
         else
 		{
-            if (!(delClient(head, sockfd)))
+            if (!(delClient(clist_head, sockfd)))
             {
                 printf("receive failed from client %d, close it\n", sockfd);
             }

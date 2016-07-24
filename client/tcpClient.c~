@@ -114,7 +114,6 @@ int main(int argc, char** argv)
 	}
 	printf("the client sockfd is : %d\n",((iop *)inp)->sockfd);
 	/* 一直接受服务器数据，默认不关心数据来源 */
-    memset(str_recv, 0, MAX_BUF_SIZE);
 	while(1)
 	{
 		numbytes = recv(sockfd, str_recv, MAX_BUF_SIZE, 0);
@@ -141,12 +140,14 @@ int main(int argc, char** argv)
             else if (head == GET_SOCKFD_IN_SERVER)
             {
                 sscanf(str_recv + 3, "%d", &sockfd_inserver);
+                printf("本机ID ：%d\n", sockfd_inserver);
+//                printf("本机\n")
             }
 
             /* SENDTO_SERVER：来自服务器的数据 */
             else if (head == SENDTO_SERVER)
             {
-                printf("\nReceived from server: %s\n", str_recv);
+                printf("Received from server: %s\n", str_recv);
             }
 
             /* 来自其他客户端的信息 */
@@ -194,7 +195,7 @@ void *ioHandler(void *argc)
 	//printf("the client sockfd is : %d\n",((iop *)argc)->sockfd);
 	while (1)
 	{
-        printf("输入对应代码，选择功能，或--exit退出并关闭客户端\n");
+        printf("输入对应代码，选择功能，或--exit退出\n");
         printf("1, 向服务器发送数据\n");
         printf("2, 向指定客户端发送数据\n");
         printf("-->\n");
@@ -208,8 +209,6 @@ void *ioHandler(void *argc)
             {
                 memset(exit_order, 0, 10);
                 memset(order_str, 0, 10);
-                close(sockfd);
-                exit(0);
                 break;
             }
 
@@ -247,20 +246,20 @@ void *ioHandler(void *argc)
             {
                 /* 发送给指定客户端 */
                 printf("请输入对应客户端ID，即sockfd，选择发送目标\n");
+                /* 给服务器发送请求，获取在线客户端的列表 */
+                if (!(send(sockfd, CLIST_REQUEST_SEND, 4, 0)))
+                {
+                    printf("获取客户端ID列表请求发送失败\n");
+                }
 
+                usleep(10000);
                 /* 获取本机在服务器中的ID（sockfd） */
                 if (!(send(sockfd, GET_SOCKFD_IN_SERVER_SEND, 4, 0)))
                 {
                     printf("获取本机ID请求失败\n");
                 }
-
-		        usleep(10000);
-
-		        /* 给服务器发送请求，获取在线客户端的列表 */
-                if (!(send(sockfd, CLIST_REQUEST_SEND, 4, 0)))
-                {
-                    printf("获取客户端ID列表请求发送失败\n");
-                }
+                else
+                    printf("GET_SOCKFD_IN_SERVER_SEND: %s\n", GET_SOCKFD_IN_SERVER_SEND);
 
                 /* 在接收线程获取客户端列表，并直接打印 */
 
@@ -289,7 +288,7 @@ void *ioHandler(void *argc)
                 /* 获取传送的数据 */
                 while (1)
                 {
-                    printf("发送到客户端 %d：", target_sockfd);
+                    printf("发送到客户端 ：\n");
                     if (fgets(strin + HEAD_BUF_SIZE - 1, MAX_BUF_SIZE + HEAD_BUF_SIZE - 1, stdin));
                     {
                         memset(exit_order, 0, 10);
@@ -305,6 +304,7 @@ void *ioHandler(void *argc)
                         }
 
                         /* 消除尾部换行符，发送 */
+                        printf("%s\n", strin);
                         len = strlen(strin);
                         strin[len - 1] = '\0';
                         if (!(send(sockfd, strin, len, 0)))
