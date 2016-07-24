@@ -81,7 +81,7 @@ int broadcast(client_list *head, char *str_send, int len);
 int broadcastFunc(client_list *head);
 
 /* 向指定客户端发送消息 */
-int sendToClient(client_list *head, int sockfd, char *str_send, int len);
+int sendToClient(int sockfd, char *str_send, int len);
 /* 集成的，向指定客户端发送消息的命令 */
 int sendToClientFunc(client_list *head);
 

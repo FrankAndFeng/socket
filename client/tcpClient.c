@@ -146,7 +146,7 @@ int main(int argc, char** argv)
             /* SENDTO_SERVER：来自服务器的数据 */
             else if (head == SENDTO_SERVER)
             {
-                printf("\nReceived from server: %s\n", str_recv);
+                printf("\nReceived from server: %s\n", str_recv + 3);
             }
 
             /* 来自其他客户端的信息 */

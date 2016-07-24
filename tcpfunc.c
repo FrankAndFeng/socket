@@ -154,7 +154,7 @@ int homePage(void)
     printf("输入0，获取帮助信息\n");
     printf("输入1，显示当前在线的客户端信息\n");
     printf("输入2，向所有在线客户端广播消息\n");
-    printf("输入3，选择一个客户端客户端，向它发生消息\n");
+    printf("输入3，选择一个客户端，向它发生消息\n");
     printf("输入4，选择一个客户端，关闭和它之间的连接\n");
     printf("输入5，关闭当前服务器并退出\n");
     printf("-->");
@@ -290,10 +290,10 @@ int broadcastFunc(client_list *head)
  *           char *str_send，待发送的字符串
  *           int len，字符串长度
  * 返回值：int，成功发送返回0，否则返回-1*/
-int sendToClient(client_list *head, int sockfd, char *str_send, int len)
+int sendToClient(int sockfd, char *str_send, int len)
 {
     int ret = 0;
-    if ((NULL == head) || (sockfd <= 0) || (NULL == str_send) || (len <= 0))
+    if ((sockfd <= 0) || (NULL == str_send) || (len <= 0))
         return --ret;
 
     /* 向客户端发送消息 */
@@ -384,11 +384,14 @@ int sendToClientFunc(client_list *head)
 
                     len = strlen(str);
                     str[len - 1] = '\0';
-                    if (sendToClient(head, sockfd, str, len))
+                    if (sendToClient(sockfd, str, len))
+                    {
                         printf("发送失败\n");
+                        printf("sockfd: %d, str: %s, len: %d", sockfd, str, len);
+                    }
                     else
                         printf("发送成功\n");
-                    memset(str, 0 ,strlen(str));
+                    //memset(str, 0 ,strlen(str));
 
                     printf("发送到客户端 %d: ", sockfd);
                 }
