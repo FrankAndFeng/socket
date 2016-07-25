@@ -341,7 +341,7 @@ int sendToClientFunc(client_list *head)
             sscanf(str, "%d", &sockfd);
 
             /* sockfd有效性的基本判断 */
-            if ((sockfd < 0) || (sockfd > 99))
+            if ((sockfd <= 0) || (sockfd > 99))
             {
                 printf("无效的sockfd，请重新输入\n");
                 ret--;
@@ -407,6 +407,7 @@ int sendToClientFunc(client_list *head)
             /* 清空缓存 */
             memset(str, 0, strlen(str));
         }
+        sockfd = 0;
         memset(str, 0, strlen(str));
     }
     return ret;
@@ -500,7 +501,7 @@ int validSockfd(client_list *head, int sockfd)
         return 0;
 
      /* sockfd有效性的基本判断 */
-    if ((sockfd < 0) || (sockfd > 99))
+    if ((sockfd <= 0) || (sockfd > 99))
     {
         printf("无效的sockfd，请重新输入\n");
         return 0;

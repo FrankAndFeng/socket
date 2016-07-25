@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 
 	/* 初始化服务器配置，完成socket，bind和listen */
 	sock_fd = initserver(type, (struct sockaddr *)&my_addr, sizeof(struct sockaddr), BACKLOG);
-    printf("sockfd of main pthread: %d\n", sock_fd);
+    //printf("sockfd of main pthread: %d\n", sock_fd);
 
 	/* 处理终端输入的线程 */
     clist_head = clist_create();
@@ -148,15 +148,21 @@ errout:
 void *ioHandler(void *argc)
 {
 	char strin[MAX_BUF_SIZE];
-    int homecommand;
-    int len;
-    homePage();
+    int homecommand = 0;
+    int len = 0;
     char str[MAX_BUF_SIZE];
+
+    /* 打印主页信息 */
+    homePage();
 
 	while(1)
 	{
-        if ((homecommand = fgetc(stdin)) && (homecommand != '\n'))
+        if (fgets(strin, MAX_BUF_SIZE, stdin))
         {
+            if (sscanf(strin, "%d", &homecommand) == 0)
+                homecommand = 99;   //不是数字的非法输入
+            //printf("homecommand: %d\n", homecommand);
+            memset(strin, 0, strlen(strin));
             switch(homecommand)
             {
                 /* 打印帮助信息 */
@@ -196,8 +202,13 @@ void *ioHandler(void *argc)
 
                 /* 关闭服务器和所有客户端连接 */
                 case CLOSESERVER:
-                    printf("close the server\n");
-                    close(((client_list *)argc)->sock_fd);
+                    printf("the server is closed\n");
+                    //close(((client_list *)argc)->sock_fd);
+                    while ((client_list *)argc)
+                    {
+                        close(((client_list *)argc)->sock_fd);
+                        argc = (client_list *)((((node *)argc))->next);
+                    }
                     exit(0);
                     break;
 
@@ -228,12 +239,18 @@ void *clientHandler(void *argc)
     client_list *clist_head =(client_list *)((client_inpara *)argc)->head;
 	while(1)
 	{
+        /* sockfd有效性判断，该连接是否已经被删除失效 */
+        if (!(searchClient(clist_head, sockfd)))
+        {
+            printf("当前客户端线程的sockfd已失效，关闭该线程\n");
+            break;
+        }
         numbytes = recv(sockfd, strRecv, MAX_BUF_SIZE, 0);
 		if (numbytes > 0)
 		{
 			strRecv[numbytes] = '\0';
-            printf("Received from client %d: %s\n", sockfd, strRecv);
-            /* 在此处判断接受的是数据还是命令 */
+            //printf("Received from client %d: %s\n", sockfd, strRecv);
+            /* 在此处解析头部信息 */
             //sscanf(strRecv, "%d:%s", &head, strRecv);
             memcpy(str_head, strRecv, 3);
             sscanf(str_head, "%d:", &head);
@@ -252,16 +269,16 @@ void *clientHandler(void *argc)
             else if (head == GET_SOCKFD_IN_SERVER)
             {
                 sprintf(strRecv + 3, "%02d:", sockfd);
-                printf("GET_SOCKFD_IN_SERVER: %s\n", strRecv);
+                //printf("GET_SOCKFD_IN_SERVER: %s\n", strRecv);
                 if (!(send(sockfd, strRecv, strlen(strRecv), 0)))
                 {
-                    printf("client %d GET_SOCKFD_IN_SERVER failed\n", sockfd);
+                   //printf("client %d GET_SOCKFD_IN_SERVER failed\n", sockfd);
                 }
             }
             /* 直接发送到服务器的数据 */
             else if (head == SENDTO_SERVER)
             {
-                printf("Received from client %d: %s\n", sockfd, strRecv + 3);
+                printf("接收自客户端 %d: %s\n", sockfd, strRecv + 3);
             }
             /* 转发数据到对应客户端，head即为客户端在服务器的sockfd,
              * 头部填充源头客户端的sockfd*/
@@ -269,15 +286,16 @@ void *clientHandler(void *argc)
             {
                 sprintf(str_head, "%02d:", sockfd);
                 memcpy(strRecv, str_head, 3);
-                printf("转发到客户端 %d\n", head);
+                //printf("转发到客户端 %d\n", head);
                 /* 解析头部信息 */
                 if (!(send(head, strRecv, strlen(strRecv), 0)))
                     printf("转发到客户端 %d 失败\n", head);
-                else
-                    printf("发送到客户端 %d：%s", head, strRecv + 3);
+                //else
+                //    printf("发送到客户端 %d：%s", head, strRecv + 3);
             }
             head = 0;
             memset(strRecv, 0, strlen(strRecv));
+            memset(str_head, 0, HEAD_BUF_SIZE + 1);
 		}
         else
 		{
@@ -292,7 +310,7 @@ void *clientHandler(void *argc)
 			break;
 		}
 	}
-    pthread_exit((void*)1);
+    //pthread_exit((void*)1);
 	close(sockfd);
-	return ((void *)0);
+	return ((void *)1);
 }

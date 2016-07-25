@@ -5,12 +5,12 @@
 #define MAX_BUF_SIZE 1024
 
 /* homepage命令列表 */
-#define HELP            '0'
-#define DISPLAYALL      '1'
-#define BROADCAST       '2'
-#define SENDTOCLIENT    '3'
-#define CLOSECLIENT     '4'
-#define CLOSESERVER     '5'
+#define HELP            0
+#define DISPLAYALL      1
+#define BROADCAST       2
+#define SENDTOCLIENT    3
+#define CLOSECLIENT     4
+#define CLOSESERVER     5
 
 /* 命令缓存区大小 */
 #define HEAD_BUF_SIZE 4
