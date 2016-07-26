@@ -476,6 +476,7 @@ int closeClientFunc(client_list *head)
             /* 关闭客户端连接 */
             closeClient(head, sockfd);
 
+
             memset(order, 0, strlen(order));
             memset(exit_order, 0, strlen(order));
             setbuf(stdin, NULL);
